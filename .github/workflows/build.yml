@@ -13,31 +13,38 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Clone Dependencies (ImGui, MinHook, CS2-Dumper)
+    - name: Clone Dependencies (ImGui, MinHook)
       run: |
         git clone https://github.com/ocornut/imgui.git external_imgui
         git clone https://github.com/TsudaKageyu/minhook.git external_minhook
-        git clone https://github.com/a2x/cs2-dumper.git external_dumper
 
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Setup Rust Toolchain
-      uses: dtolnay/rust-toolchain@stable
-
-    - name: Run CS2-Dumper via Cargo
+    - name: Download and Harmonize Offsets
       run: |
-        cd external_dumper
-        cargo run --release
+        New-Item -ItemType Directory -Force -Path "sdk"
+        # 1. Güncel offsets.hpp dosyasını resmi repodan indiriyoruz
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.hpp" -OutFile "sdk/offsets.hpp"
+        
+        # 2. Dosyanın sonuna, esp.hpp ve aimbot.hpp dosyalarının kullandığı Offsets köprüsünü (alias) ekliyoruz
+        $bridgeCode = @"
 
-    - name: Copy Generated Offsets to SDK
-      run: |
-        # a2x/cs2-dumper çıktıyı varsayılan olarak output klasörüne verir
-        if (Test-Path "external_dumper/output/offsets.hpp") {
-            Copy-Item "external_dumper/output/offsets.hpp" -Destination "sdk/offsets.hpp" -Force
-        } elseif (Test-Path "external_dumper/outputs/offsets.hpp") {
-            Copy-Item "external_dumper/outputs/offsets.hpp" -Destination "sdk/offsets.hpp" -Force
+        // --- Vsense Custom Offsets Bridge ---
+        namespace Offsets {
+            inline std::ptrdiff_t& dwEntityList = cs2_dumper::offsets::client_dll::dwEntityList;
+            inline std::ptrdiff_t& dwLocalPlayerPawn = cs2_dumper::offsets::client_dll::dwLocalPlayerPawn;
+            inline std::ptrdiff_t& dwViewMatrix = cs2_dumper::offsets::client_dll::dwViewMatrix;
+            inline std::ptrdiff_t& dwViewAngles = cs2_dumper::offsets::client_dll::dwViewAngles;
+            inline std::ptrdiff_t& m_iHealth = cs2_dumper::offsets::client_dll::m_iHealth;
+            inline std::ptrdiff_t& m_hPlayerPawn = cs2_dumper::offsets::client_dll::m_hPlayerPawn;
+            inline std::ptrdiff_t& m_vOldOrigin = cs2_dumper::offsets::client_dll::m_vOldOrigin;
+            inline std::ptrdiff_t& m_iTeamNum = cs2_dumper::offsets::client_dll::m_iTeamNum;
         }
+        "@
+        
+        Add-Content -Path "sdk/offsets.hpp" -Value $bridgeCode
+        Write-Host "offsets.hpp başarıyla indirildi ve köprü yapısı entegre edildi."
 
     - name: Compile DLL
       run: |
