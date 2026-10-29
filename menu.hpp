@@ -4,11 +4,15 @@
 #include "features/aimbot.hpp"
 
 namespace Menu {
+    // Menünün ilk açılışta doğrudan açık gelmesi için true yaptık
     inline bool MenuOpen = true;
 
     inline void Render() {
-        // Sağ Shift yerine Insert tuşu (VK_INSERT) kullanıyoruz
-        if (GetAsyncKeyState(VK_INSERT) & 1) MenuOpen = !MenuOpen;
+        // Insert tuşuna basıldığında açılıp kapanma (toggle) durumu
+        if (GetAsyncKeyState(VK_INSERT) & 1) {
+            MenuOpen = !MenuOpen;
+        }
+
         if (!MenuOpen) return;
 
         ImGui::Begin("Vsense v1.0 | CS2 Internal", &MenuOpen, ImGuiWindowFlags_AlwaysAutoResize);
