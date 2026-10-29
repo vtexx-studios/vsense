@@ -1,12 +1,15 @@
 #pragma once
-#include <cstdint>
+#include <cstddef>
 
 namespace Offsets {
-    inline uintptr_t dwEntityList = 0x271C8B8;
-    inline uintptr_t dwLocalPlayerController = 0x253EEF8;
-    inline uintptr_t dwLocalPlayerPawn = 0x25676D8;
-    inline uintptr_t dwViewMatrix = 0x256CFE0;
-    inline uintptr_t m_iHealth = 0x334;
-    inline uintptr_t m_hPlayerPawn = 0x7EC;
-    inline uintptr_t m_vOldOrigin = 0x127C;
+    // Client.dll statik offsetleri (Dumper burayı otomatik güncelleyecek)
+    inline std::ptrdiff_t dwEntityList = 0x1A28A40; // Örnek/Güncel değerler
+    inline std::ptrdiff_t dwLocalPlayerPawn = 0x1868358;
+    inline std::ptrdiff_t dwViewMatrix = 0x1A99060;
+
+    // Entity Schema / Netvar offsetleri
+    inline std::ptrdiff_t m_iHealth = 0x334;
+    inline std::ptrdiff_t m_hPlayerPawn = 0x804;
+    inline std::ptrdiff_t m_vOldOrigin = 0x1274;
+    inline std::ptrdiff_t m_iTeamNum = 0x3CB;
 }
