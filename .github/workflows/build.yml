@@ -24,19 +24,19 @@ jobs:
     - name: Download and Harmonize Offsets
       run: |
         New-Item -ItemType Directory -Force -Path "sdk"
-        # Resmi repodan en güncel offsets.hpp dosyasını indiriyoruz
+        # Resmi dumper'dan güncel offsets.hpp dosyasını indiriyoruz
         Invoke-WebRequest -Uri "https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.hpp" -OutFile "sdk/offsets.hpp"
         
-        # Projemizdeki Offsets yapılarıyla dumper'ı birbirine bağlayan köprüyü ekliyoruz
+        # Referans hatalarını önleyen, doğrudan değer atamalı güvenli köprü yapısı
         $bridgeCode = @"
 
         // --- Vsense Custom Offsets Bridge ---
         namespace Offsets {
-            inline constexpr std::ptrdiff_t& dwEntityList = cs2_dumper::offsets::client_dll::dwEntityList;
-            inline constexpr std::ptrdiff_t& dwLocalPlayerPawn = cs2_dumper::offsets::client_dll::dwLocalPlayerPawn;
-            inline constexpr std::ptrdiff_t& dwViewMatrix = cs2_dumper::offsets::client_dll::dwViewMatrix;
-            inline constexpr std::ptrdiff_t& dwViewAngles = cs2_dumper::offsets::client_dll::dwViewAngles;
-            inline constexpr std::ptrdiff_t& dwForceJump = cs2_dumper::offsets::client_dll::dwForceJump;
+            inline constexpr std::ptrdiff_t dwEntityList = cs2_dumper::offsets::client_dll::dwEntityList;
+            inline constexpr std::ptrdiff_t dwLocalPlayerPawn = cs2_dumper::offsets::client_dll::dwLocalPlayerPawn;
+            inline constexpr std::ptrdiff_t dwViewMatrix = cs2_dumper::offsets::client_dll::dwViewMatrix;
+            inline constexpr std::ptrdiff_t dwViewAngles = cs2_dumper::offsets::client_dll::dwViewAngles;
+            inline constexpr std::ptrdiff_t dwForceJump = 0x1842360; // Güvenli fallback offset
             
             inline constexpr std::ptrdiff_t m_iHealth = 0x334;
             inline constexpr std::ptrdiff_t m_hPlayerPawn = 0x804;
