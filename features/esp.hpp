@@ -37,9 +37,6 @@ namespace Features {
             uintptr_t playerController = *reinterpret_cast<uintptr_t*>(listEntry + 120 * (i & 0x1FF));
             if (!playerController) continue;
 
-            int health = *reinterpret_cast<int*>(playerController + Offsets::m_iHealth);
-            if (health <= 0 || health > 100) continue;
-
             uint32_t pawnHandle = *reinterpret_cast<uint32_t*>(playerController + Offsets::m_hPlayerPawn);
             if (!pawnHandle) continue;
 
@@ -48,6 +45,10 @@ namespace Features {
 
             uintptr_t pPawn = *reinterpret_cast<uintptr_t*>(listEntry2 + 120 * (pawnHandle & 0x1FF));
             if (!pPawn || pPawn == localPlayerPawn) continue;
+
+            // DÜZELTME: m_iHealth artık doğru şekilde pPawn üzerinden okunuyor!
+            int health = *reinterpret_cast<int*>(pPawn + Offsets::m_iHealth);
+            if (health <= 0 || health > 100) continue;
 
             int team = *reinterpret_cast<int*>(pPawn + Offsets::m_iTeamNum);
             if (team == localTeam) continue;
