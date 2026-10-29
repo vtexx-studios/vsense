@@ -11,7 +11,6 @@ namespace Features {
     inline void RenderESP() {
         if (!EspBox) return;
 
-        // GÜVENLİK: Offsetler sıfırsa işlem yapmadan çık (çökme ve donmaları önler)
         if (Offsets::dwViewMatrix == 0 || Offsets::dwEntityList == 0 || Offsets::dwLocalPlayerPawn == 0) return;
 
         uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
@@ -37,7 +36,8 @@ namespace Features {
             uintptr_t listEntry = *reinterpret_cast<uintptr_t*>(entityList + 0x8 * ((i & 0x7FFF) >> 9) + 16);
             if (!listEntry) continue;
 
-            uintptr_t playerController = *reinterpret_cast<uintptr_t*>(listEntry + 120 * (i & 0x1FF));
+            // DÜZELTME: Pointer dizisi stride değeri 120 değil, 8 (0x8) olmalıdır!
+            uintptr_t playerController = *reinterpret_cast<uintptr_t*>(listEntry + 0x8 * (i & 0x1FF));
             if (!playerController) continue;
 
             uint32_t pawnHandle = *reinterpret_cast<uint32_t*>(playerController + Offsets::m_hPlayerPawn);
@@ -46,7 +46,8 @@ namespace Features {
             uintptr_t listEntry2 = *reinterpret_cast<uintptr_t*>(entityList + 0x8 * ((pawnHandle & 0x7FFF) >> 9) + 16);
             if (!listEntry2) continue;
 
-            uintptr_t pPawn = *reinterpret_cast<uintptr_t*>(listEntry2 + 120 * (pawnHandle & 0x1FF));
+            // DÜZELTME: Pawn pointer dizisi stride değeri de 0x8 olmalıdır!
+            uintptr_t pPawn = *reinterpret_cast<uintptr_t*>(listEntry2 + 0x8 * (pawnHandle & 0x1FF));
             if (!pPawn || pPawn == localPlayerPawn) continue;
 
             int health = *reinterpret_cast<int*>(pPawn + Offsets::m_iHealth);
