@@ -2,11 +2,11 @@
 #include <cstddef>
 
 namespace cs2_dumper::offsets::client_dll {
-    inline constexpr std::ptrdiff_t dwEntityList = 0;
-    inline constexpr std::ptrdiff_t dwLocalPlayerPawn = 0;
-    inline constexpr std::ptrdiff_t dwViewMatrix = 0;
-    inline constexpr std::ptrdiff_t dwViewAngles = 0;
-    inline constexpr std::ptrdiff_t dwForceJump = 0;
+    inline constexpr std::ptrdiff_t dwEntityList = 0x1A444C0;
+    inline constexpr std::ptrdiff_t dwLocalPlayerPawn = 0x1824A08;
+    inline constexpr std::ptrdiff_t dwViewMatrix = 0x1A4D020;
+    inline constexpr std::ptrdiff_t dwViewAngles = 0x1A5B4C0;
+    inline constexpr std::ptrdiff_t dwForceJump = 0x1842360;
 }
 
 namespace Offsets {
