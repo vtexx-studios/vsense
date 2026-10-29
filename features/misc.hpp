@@ -10,6 +10,8 @@ namespace Features {
 
     inline void RunBhop() {
         if (!BhopEnabled) return;
+        if (Offsets::dwLocalPlayerPawn == 0 || Offsets::dwForceJump == 0) return;
+
         uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
         if (!client) return;
 
@@ -30,6 +32,8 @@ namespace Features {
 
     inline void RunMevlana() {
         if (!MevlanaEnabled) return;
+        if (Offsets::dwViewAngles == 0) return;
+
         uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
         if (!client) return;
 
@@ -42,6 +46,8 @@ namespace Features {
     }
 
     inline void RunThirdperson() {
+        if (Offsets::dwLocalPlayerPawn == 0) return;
+
         uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
         if (!client) return;
         uintptr_t localPlayer = *reinterpret_cast<uintptr_t*>(client + Offsets::dwLocalPlayerPawn);
