@@ -64,11 +64,11 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
     ImGui::NewFrame();
 
     // Hile Özellikleri
-    Features::RenderESP();
-    Features::RunAimbot();
-    Features::RunBhop();
-    Features::RunMevlana();
-    Features::RunThirdperson();
+    // Features::RenderESP();
+    // Features::RunAimbot();
+    // Features::RunBhop();
+    // Features::RunMevlana();
+    // Features::RunThirdperson();
 
     // Menü
     Menu::Render();
