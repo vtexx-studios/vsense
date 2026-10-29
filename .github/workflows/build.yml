@@ -23,7 +23,7 @@ jobs:
 
     - name: Compile DLL
       run: |
-        cl /LD /EHsc dllmain.cpp `
+        cl /LD /EHsc /std:c++17 dllmain.cpp `
           external_imgui/imgui.cpp `
           external_imgui/imgui_draw.cpp `
           external_imgui/imgui_tables.cpp `
