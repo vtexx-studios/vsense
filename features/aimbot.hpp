@@ -19,12 +19,12 @@ namespace Features {
 
     inline void RunAimbot() {
         if (!AimbotEnabled) return;
-        
-        // Sağ tık zorunluluğu kaldırıldı. Aimbot menüden açıldığı an aktif çalışır.
-        // İsteğe bağlı sol tık yapmak istersen: if (!(GetAsyncKeyState(VK_LBUTTON) & 0x8000)) return; ekleyebilirsin.
 
         uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
         if (!client) return;
+
+        // GÜVENLİK: Offsetler sıfırsa çökmesin diye çıkış yap
+        if (Offsets::dwLocalPlayerPawn == 0 || Offsets::dwEntityList == 0 || Offsets::dwViewAngles == 0) return;
 
         uintptr_t localPlayerPawn = *reinterpret_cast<uintptr_t*>(client + Offsets::dwLocalPlayerPawn);
         if (!localPlayerPawn) return;
@@ -57,7 +57,6 @@ namespace Features {
             uintptr_t pPawn = *reinterpret_cast<uintptr_t*>(listEntry2 + 120 * (pawnHandle & 0x1FF));
             if (!pPawn || pPawn == localPlayerPawn) continue;
 
-            // DÜZELTME: Can kontrolü doğru şekilde pPawn üzerinden yapılıyor
             int health = *reinterpret_cast<int*>(pPawn + Offsets::m_iHealth);
             if (health <= 0 || health > 100) continue;
 
@@ -65,7 +64,7 @@ namespace Features {
             if (team == localTeam) continue;
 
             Vector3 targetPos = *reinterpret_cast<Vector3*>(pPawn + Offsets::m_vOldOrigin);
-            targetPos.z += 60.0f; // Kafa/göğüs hizası
+            targetPos.z += 60.0f;
 
             Vector3 calculatedAngle;
             CalcAngle(localEyePos, targetPos, calculatedAngle);
