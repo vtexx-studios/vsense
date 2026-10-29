@@ -1,0 +1,76 @@
+name: Build Vsense CS2 DLL
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Clone Dependencies (ImGui, MinHook)
+      run: |
+        git clone https://github.com/ocornut/imgui.git external_imgui
+        git clone https://github.com/TsudaKageyu/minhook.git external_minhook
+
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Download and Harmonize Offsets
+      run: |
+        New-Item -ItemType Directory -Force -Path "sdk"
+        # Resmi repodan en güncel offsets.hpp dosyasını indiriyoruz
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.hpp" -OutFile "sdk/offsets.hpp"
+        
+        # Projemizdeki Offsets yapılarıyla dumper'ı birbirine bağlayan köprüyü ekliyoruz
+        $bridgeCode = @"
+
+        // --- Vsense Custom Offsets Bridge ---
+        namespace Offsets {
+            inline constexpr std::ptrdiff_t& dwEntityList = cs2_dumper::offsets::client_dll::dwEntityList;
+            inline constexpr std::ptrdiff_t& dwLocalPlayerPawn = cs2_dumper::offsets::client_dll::dwLocalPlayerPawn;
+            inline constexpr std::ptrdiff_t& dwViewMatrix = cs2_dumper::offsets::client_dll::dwViewMatrix;
+            inline constexpr std::ptrdiff_t& dwViewAngles = cs2_dumper::offsets::client_dll::dwViewAngles;
+            inline constexpr std::ptrdiff_t& dwForceJump = cs2_dumper::offsets::client_dll::dwForceJump;
+            
+            inline constexpr std::ptrdiff_t m_iHealth = 0x334;
+            inline constexpr std::ptrdiff_t m_hPlayerPawn = 0x804;
+            inline constexpr std::ptrdiff_t m_vOldOrigin = 0x1274;
+            inline constexpr std::ptrdiff_t m_iTeamNum = 0x3CB;
+            inline constexpr std::ptrdiff_t m_fFlags = 0x3EC;
+        }
+        "@
+        
+        Add-Content -Path "sdk/offsets.hpp" -Value $bridgeCode
+        Write-Host "Offsets başarıyla indirildi ve harmanlandı."
+
+    - name: Compile DLL
+      run: |
+        cl /LD /EHsc /std:c++17 dllmain.cpp `
+          external_imgui/imgui.cpp `
+          external_imgui/imgui_draw.cpp `
+          external_imgui/imgui_tables.cpp `
+          external_imgui/imgui_widgets.cpp `
+          external_imgui/backends/imgui_impl_win32.cpp `
+          external_imgui/backends/imgui_impl_dx11.cpp `
+          external_minhook/src/buffer.c `
+          external_minhook/src/hook.c `
+          external_minhook/src/trampoline.c `
+          external_minhook/src/HDE/hde32.c `
+          external_minhook/src/HDE/hde64.c `
+          /I"external_imgui" `
+          /I"external_imgui/backends" `
+          /I"external_minhook/include" `
+          /I"sdk" `
+          user32.lib d3d11.lib dxgi.lib /Fe:Vsense.dll
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Vsense_DLL
+        path: Vsense.dll
