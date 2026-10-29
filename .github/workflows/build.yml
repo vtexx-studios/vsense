@@ -24,27 +24,29 @@ jobs:
     - name: Download and Harmonize Offsets
       run: |
         New-Item -ItemType Directory -Force -Path "sdk"
-        # 1. Güncel offsets.hpp dosyasını resmi repodan indiriyoruz
+        # 1. Güncel offsets.hpp dosyasını indiriyoruz
         Invoke-WebRequest -Uri "https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.hpp" -OutFile "sdk/offsets.hpp"
         
-        # 2. Dosyanın sonuna, esp.hpp ve aimbot.hpp dosyalarının kullandığı Offsets köprüsünü (alias) ekliyoruz
+        # 2. Doğru constexpr tipleri ve netvar tanımlarını içeren köprüyü ekliyoruz
         $bridgeCode = @"
 
         // --- Vsense Custom Offsets Bridge ---
         namespace Offsets {
-            inline std::ptrdiff_t& dwEntityList = cs2_dumper::offsets::client_dll::dwEntityList;
-            inline std::ptrdiff_t& dwLocalPlayerPawn = cs2_dumper::offsets::client_dll::dwLocalPlayerPawn;
-            inline std::ptrdiff_t& dwViewMatrix = cs2_dumper::offsets::client_dll::dwViewMatrix;
-            inline std::ptrdiff_t& dwViewAngles = cs2_dumper::offsets::client_dll::dwViewAngles;
-            inline std::ptrdiff_t& m_iHealth = cs2_dumper::offsets::client_dll::m_iHealth;
-            inline std::ptrdiff_t& m_hPlayerPawn = cs2_dumper::offsets::client_dll::m_hPlayerPawn;
-            inline std::ptrdiff_t& m_vOldOrigin = cs2_dumper::offsets::client_dll::m_vOldOrigin;
-            inline std::ptrdiff_t& m_iTeamNum = cs2_dumper::offsets::client_dll::m_iTeamNum;
+            inline constexpr std::ptrdiff_t dwEntityList = cs2_dumper::offsets::client_dll::dwEntityList;
+            inline constexpr std::ptrdiff_t dwLocalPlayerPawn = cs2_dumper::offsets::client_dll::dwLocalPlayerPawn;
+            inline constexpr std::ptrdiff_t dwViewMatrix = cs2_dumper::offsets::client_dll::dwViewMatrix;
+            inline constexpr std::ptrdiff_t dwViewAngles = cs2_dumper::offsets::client_dll::dwViewAngles;
+            
+            // Netvar / Schema Değerleri (Manuel Tanımlar)
+            inline constexpr std::ptrdiff_t m_iHealth = 0x334;
+            inline constexpr std::ptrdiff_t m_hPlayerPawn = 0x804;
+            inline constexpr std::ptrdiff_t m_vOldOrigin = 0x1274;
+            inline constexpr std::ptrdiff_t m_iTeamNum = 0x3CB;
         }
         "@
         
         Add-Content -Path "sdk/offsets.hpp" -Value $bridgeCode
-        Write-Host "offsets.hpp başarıyla indirildi ve köprü yapısı entegre edildi."
+        Write-Host "offsets.hpp başarıyla güncellendi ve köprü eklendi."
 
     - name: Compile DLL
       run: |
