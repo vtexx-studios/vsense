@@ -23,7 +23,6 @@ namespace Features {
         uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
         if (!client) return;
 
-        // GÜVENLİK: Offsetler sıfırsa çökmesin diye çıkış yap
         if (Offsets::dwLocalPlayerPawn == 0 || Offsets::dwEntityList == 0 || Offsets::dwViewAngles == 0) return;
 
         uintptr_t localPlayerPawn = *reinterpret_cast<uintptr_t*>(client + Offsets::dwLocalPlayerPawn);
@@ -45,7 +44,7 @@ namespace Features {
             uintptr_t listEntry = *reinterpret_cast<uintptr_t*>(entityList + 0x8 * ((i & 0x7FFF) >> 9) + 16);
             if (!listEntry) continue;
 
-            uintptr_t playerController = *reinterpret_cast<uintptr_t*>(listEntry + 120 * (i & 0x1FF));
+            uintptr_t playerController = *reinterpret_cast<uintptr_t*>(listEntry + 0x8 * (i & 0x1FF));
             if (!playerController) continue;
 
             uint32_t pawnHandle = *reinterpret_cast<uint32_t*>(playerController + Offsets::m_hPlayerPawn);
@@ -54,7 +53,7 @@ namespace Features {
             uintptr_t listEntry2 = *reinterpret_cast<uintptr_t*>(entityList + 0x8 * ((pawnHandle & 0x7FFF) >> 9) + 16);
             if (!listEntry2) continue;
 
-            uintptr_t pPawn = *reinterpret_cast<uintptr_t*>(listEntry2 + 120 * (pawnHandle & 0x1FF));
+            uintptr_t pPawn = *reinterpret_cast<uintptr_t*>(listEntry2 + 0x8 * (pawnHandle & 0x1FF));
             if (!pPawn || pPawn == localPlayerPawn) continue;
 
             int health = *reinterpret_cast<int*>(pPawn + Offsets::m_iHealth);
@@ -69,7 +68,9 @@ namespace Features {
             Vector3 calculatedAngle;
             CalcAngle(localEyePos, targetPos, calculatedAngle);
 
-            Vector3* viewAngles = reinterpret_cast<Vector3*>(client + Offsets::dwViewAngles);
+            // Güvenli ViewAngles Pointer okuma
+            uintptr_t viewAnglesPtr = client + Offsets::dwViewAngles;
+            Vector3* viewAngles = reinterpret_cast<Vector3*>(viewAnglesPtr);
             if (!viewAngles) continue;
 
             float fovDelta = sqrt(pow(calculatedAngle.x - viewAngles->x, 2) + pow(calculatedAngle.y - viewAngles->y, 2));
@@ -81,7 +82,8 @@ namespace Features {
         }
 
         if (targetFound) {
-            Vector3* viewAngles = reinterpret_cast<Vector3*>(client + Offsets::dwViewAngles);
+            uintptr_t viewAnglesPtr = client + Offsets::dwViewAngles;
+            Vector3* viewAngles = reinterpret_cast<Vector3*>(viewAnglesPtr);
             if (viewAngles) {
                 if (Smooth < 1.0f) Smooth = 1.0f;
                 viewAngles->x += (bestAngle.x - viewAngles->x) / Smooth;
