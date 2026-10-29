@@ -13,13 +13,33 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Clone ImGui and MinHook
+    - name: Clone Dependencies (ImGui, MinHook, CS2-Dumper)
       run: |
         git clone https://github.com/ocornut/imgui.git external_imgui
         git clone https://github.com/TsudaKageyu/minhook.git external_minhook
+        git clone https://github.com/a2x/cs2-dumper.git external_dumper
 
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Build and Run CS2-Dumper
+      run: |
+        cd external_dumper
+        cmake -B build
+        cmake --build build --config Release
+        cd build\bin\Release
+        # Dumper'ı çalıştırıp güncel offsetleri üretiyoruz
+        .\cs2-dumper.exe --output output
+        cd ../../../../
+
+    - name: Copy Generated Offsets to SDK
+      run: |
+        # Üretilen offsets.hpp dosyasını projedeki sdk/ klasörünün üzerine yazıyoruz
+        if (Test-Path "external_dumper/build/bin/Release/output/offsets.hpp") {
+            Copy-Item "external_dumper/build/bin/Release/output/offsets.hpp" -Destination "sdk/offsets.hpp" -Force
+        } elseif (Test-Path "external_dumper/output/offsets.hpp") {
+            Copy-Item "external_dumper/output/output/offsets.hpp" -Destination "sdk/offsets.hpp" -Force
+        }
 
     - name: Compile DLL
       run: |
@@ -38,6 +58,7 @@ jobs:
           /I"external_imgui" `
           /I"external_imgui/backends" `
           /I"external_minhook/include" `
+          /I"sdk" `
           user32.lib d3d11.lib dxgi.lib /Fe:Vsense.dll
 
     - name: Upload Artifact
