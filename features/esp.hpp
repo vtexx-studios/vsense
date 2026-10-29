@@ -2,10 +2,10 @@
 #include "imgui.h"
 #include "../sdk/vector.hpp"
 #include "../sdk/offsets.hpp"
+#include <windows.h>
 
 namespace Features {
     inline bool EspBox = true;
-    inline bool CharmsEnabled = true;
     inline float BoxColor[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
 
     inline void RenderESP() {
@@ -23,7 +23,6 @@ namespace Features {
         uintptr_t localPlayerPawn = *reinterpret_cast<uintptr_t*>(client + Offsets::dwLocalPlayerPawn);
         if (!localPlayerPawn) return;
 
-        // Yerel oyuncunun takımını al (kendi takımımızı ESP'de elememek için)
         int localTeam = *reinterpret_cast<int*>(localPlayerPawn + Offsets::m_iTeamNum);
 
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs;
@@ -50,7 +49,6 @@ namespace Features {
             uintptr_t pPawn = *reinterpret_cast<uintptr_t*>(listEntry2 + 120 * (pawnHandle & 0x1FF));
             if (!pPawn || pPawn == localPlayerPawn) continue;
 
-            // Takım kontrolü (Aynı takımdakileri es geç)
             int team = *reinterpret_cast<int*>(pPawn + Offsets::m_iTeamNum);
             if (team == localTeam) continue;
 
@@ -67,9 +65,5 @@ namespace Features {
             }
         }
         ImGui::End();
-    }
-
-    inline void ApplyCharms() {
-        if (!CharmsEnabled) return;
     }
 }
