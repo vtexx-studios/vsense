@@ -21,6 +21,10 @@ namespace Features {
         if (!entityList) return;
 
         uintptr_t localPlayerPawn = *reinterpret_cast<uintptr_t*>(client + Offsets::dwLocalPlayerPawn);
+        if (!localPlayerPawn) return;
+
+        // Yerel oyuncunun takımını al (kendi takımımızı ESP'de elememek için)
+        int localTeam = *reinterpret_cast<int*>(localPlayerPawn + Offsets::m_iTeamNum);
 
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs;
         ImGui::Begin("ESP Overlay", nullptr, flags);
@@ -45,6 +49,10 @@ namespace Features {
 
             uintptr_t pPawn = *reinterpret_cast<uintptr_t*>(listEntry2 + 120 * (pawnHandle & 0x1FF));
             if (!pPawn || pPawn == localPlayerPawn) continue;
+
+            // Takım kontrolü (Aynı takımdakileri es geç)
+            int team = *reinterpret_cast<int*>(pPawn + Offsets::m_iTeamNum);
+            if (team == localTeam) continue;
 
             Vector3 origin = *reinterpret_cast<Vector3*>(pPawn + Offsets::m_vOldOrigin);
             Vector2 screenCoords;
