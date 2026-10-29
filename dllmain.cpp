@@ -7,6 +7,11 @@
 #include "MinHook.h"
 #include "menu.hpp"
 
+// Özellik Başlıkları (ESP, Aimbot, Misc/Bhop/Mevlana/Thirdperson)
+#include "features/esp.hpp"
+#include "features/aimbot.hpp"
+#include "features/misc.hpp"
+
 typedef HRESULT(__stdcall* Present)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
 Present oPresent = nullptr;
 HWND window = nullptr;
@@ -53,7 +58,16 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    // Menüyü çiz
+    // ===================================================
+    // HİLE MANTIKLARINI HER KAREDE ÇALIŞTIR
+    // ===================================================
+    Features::RenderESP();
+    Features::RunAimbot();
+    Features::RunBhop();
+    Features::RunMevlana();
+    Features::RunThirdperson();
+
+    // Menü Arayüzünü Çiz
     Menu::Render();
 
     ImGui::Render();
@@ -63,11 +77,14 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 }
 
 DWORD WINAPI MainThread(LPVOID lpParam) {
+    while (GetModuleHandleA("client.dll") == NULL) {
+        Sleep(100);
+    }
+
     if (MH_Initialize() != MH_OK) {
         return 1;
     }
 
-    // Geçici DX11 device oluşturarak vtable üzerinden Present adresini yakalayalım
     WNDCLASSEXA wc = { sizeof(WNDCLASSEXA), CS_CLASSDC, DefWindowProcA, 0L, 0L, GetModuleHandleA(NULL), NULL, NULL, NULL, NULL, "VsenseClass", NULL };
     RegisterClassExA(&wc);
     HWND hwnd = CreateWindowA(wc.lpszClassName, "VsenseWindow", WS_OVERLAPPEDWINDOW, 100, 100, 300, 300, NULL, NULL, wc.hInstance, NULL);
@@ -92,7 +109,7 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
         D3D11_SDK_VERSION, &sd, &pDummySwapChain, &pDummyDevice, NULL, &pDummyContext) == S_OK)
     {
         void** pVTable = *reinterpret_cast<void***>(pDummySwapChain);
-        void* pPresent = pVTable[8]; // IDXGISwapChain::Present vtable index 8
+        void* pPresent = pVTable[8];
 
         pDummySwapChain->Release();
         pDummyDevice->Release();
