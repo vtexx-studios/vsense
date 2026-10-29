@@ -11,6 +11,9 @@ namespace Features {
     inline void RenderESP() {
         if (!EspBox) return;
 
+        // GÜVENLİK: Offsetler sıfırsa işlem yapmadan çık (çökme ve donmaları önler)
+        if (Offsets::dwViewMatrix == 0 || Offsets::dwEntityList == 0 || Offsets::dwLocalPlayerPawn == 0) return;
+
         uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
         if (!client) return;
 
@@ -46,7 +49,6 @@ namespace Features {
             uintptr_t pPawn = *reinterpret_cast<uintptr_t*>(listEntry2 + 120 * (pawnHandle & 0x1FF));
             if (!pPawn || pPawn == localPlayerPawn) continue;
 
-            // DÜZELTME: m_iHealth artık doğru şekilde pPawn üzerinden okunuyor!
             int health = *reinterpret_cast<int*>(pPawn + Offsets::m_iHealth);
             if (health <= 0 || health > 100) continue;
 
