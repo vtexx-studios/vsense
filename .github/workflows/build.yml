@@ -1,0 +1,53 @@
+name: Build Vsense CS2 DLL
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Download Latest Offsets from Dumper
+      run: |
+        New-Item -ItemType Directory -Force -Path "sdk"
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.hpp" -OutFile "sdk/offsets_dumper.hpp"
+        Write-Output "Güncel offsetler başarıyla indirildi!"
+
+    - name: Clone ImGui and MinHook
+      run: |
+        git clone https://github.com/ocornut/imgui.git external_imgui
+        git clone https://github.com/TsudaKageyu/minhook.git external_minhook
+
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Compile DLL
+      run: |
+        cl /LD /EHsc dllmain.cpp `
+          external_imgui/imgui.cpp `
+          external_imgui/imgui_draw.cpp `
+          external_imgui/imgui_tables.cpp `
+          external_imgui/imgui_widgets.cpp `
+          external_imgui/backends/imgui_impl_win32.cpp `
+          external_imgui/backends/imgui_impl_dx11.cpp `
+          external_minhook/src/buffer.c `
+          external_minhook/src/hook.c `
+          external_minhook/src/trampoline.c `
+          external_minhook/src/HDE/hde32.c `
+          external_minhook/src/HDE/hde64.c `
+          /I"external_imgui" `
+          /I"external_imgui/backends" `
+          /I"external_minhook/include" `
+          user32.lib d3d11.lib dxgi.lib /Fe:Vsense.dll
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Vsense_DLL
+        path: Vsense.dll
