@@ -4,6 +4,7 @@
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
+#include "MinHook.h"
 #include "menu.hpp"
 
 typedef HRESULT(__stdcall* Present)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
@@ -46,11 +47,13 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
         }
     }
 
+    if (!init) return oPresent(pSwapChain, SyncInterval, Flags);
+
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    // Menüyü ciz
+    // Menüyü çiz
     Menu::Render();
 
     ImGui::Render();
@@ -60,12 +63,48 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 }
 
 DWORD WINAPI MainThread(LPVOID lpParam) {
-    bool hooked = false;
-    while (!hooked) {
-        // DirectX SwapChain pointer bulma rutini (Basit Hook Örneği)
-        // Eğer MinHook kullanıyorsan buradaki hook fonksiyonun kalabilir.
-        Sleep(100);
+    if (MH_Initialize() != MH_OK) {
+        return 1;
     }
+
+    // Geçici DX11 device oluşturarak vtable üzerinden Present adresini yakalayalım
+    WNDCLASSEXA wc = { sizeof(WNDCLASSEXA), CS_CLASSDC, DefWindowProcA, 0L, 0L, GetModuleHandleA(NULL), NULL, NULL, NULL, NULL, "VsenseClass", NULL };
+    RegisterClassExA(&wc);
+    HWND hwnd = CreateWindowA(wc.lpszClassName, "VsenseWindow", WS_OVERLAPPEDWINDOW, 100, 100, 300, 300, NULL, NULL, wc.hInstance, NULL);
+
+    D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_0 };
+    ID3D11Device* pDummyDevice = nullptr;
+    ID3D11DeviceContext* pDummyContext = nullptr;
+    IDXGISwapChain* pDummySwapChain = nullptr;
+
+    DXGI_SWAP_CHAIN_DESC sd;
+    ZeroMemory(&sd, sizeof(sd));
+    sd.BufferCount = 1;
+    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.OutputWindow = hwnd;
+    sd.SampleDesc.Count = 1;
+    sd.Windowed = TRUE;
+    sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+
+    if (D3D11CreateDeviceAndSwapChain(
+        NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, levels, 2,
+        D3D11_SDK_VERSION, &sd, &pDummySwapChain, &pDummyDevice, NULL, &pDummyContext) == S_OK)
+    {
+        void** pVTable = *reinterpret_cast<void***>(pDummySwapChain);
+        void* pPresent = pVTable[8]; // IDXGISwapChain::Present vtable index 8
+
+        pDummySwapChain->Release();
+        pDummyDevice->Release();
+        pDummyContext->Release();
+        DestroyWindow(hwnd);
+        UnregisterClassA(wc.lpszClassName, wc.hInstance);
+
+        if (MH_CreateHook(pPresent, reinterpret_cast<LPVOID>(&hkPresent), reinterpret_cast<LPVOID*>(&oPresent)) == MH_OK) {
+            MH_EnableHook(pPresent);
+        }
+    }
+
     return 0;
 }
 
@@ -73,10 +112,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls(hModule);
-        // Mesaj penceresi (MessageBox) KALDIRILDI. Artık oyunu kitlemez.
         CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)MainThread, hModule, 0, nullptr);
         break;
     case DLL_PROCESS_DETACH:
+        MH_DisableHook(MH_ALL_HOOKS);
+        MH_Uninitialize();
         break;
     }
     return TRUE;
