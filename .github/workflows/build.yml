@@ -13,12 +13,6 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Download Latest Offsets from Dumper
-      run: |
-        New-Item -ItemType Directory -Force -Path "sdk"
-        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.hpp" -OutFile "sdk/offsets.hpp"
-        Write-Output "Güncel offsetler başarıyla indirildi ve entegre edildi!"
-
     - name: Clone ImGui and MinHook
       run: |
         git clone https://github.com/ocornut/imgui.git external_imgui
