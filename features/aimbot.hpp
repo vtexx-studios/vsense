@@ -5,11 +5,10 @@
 #include <cmath>
 
 namespace Features {
-    inline bool AimbotEnabled = true;
+    inline bool AimbotEnabled = false;
     inline float Fov = 5.0f;
     inline float Smooth = 5.0f;
 
-    // Hedef açı hesaplama fonksiyonu (Math)
     inline void CalcAngle(const Vector3& src, const Vector3& dst, Vector3& angles) {
         Vector3 delta = src - dst;
         float hyp = sqrt(delta.x * delta.x + delta.y * delta.y);
@@ -20,8 +19,6 @@ namespace Features {
 
     inline void RunAimbot() {
         if (!AimbotEnabled) return;
-
-        // Varsayılan olarak fare sağ tuşuna (Right Click) basılı tutulduğunda çalışır
         if (!(GetAsyncKeyState(VK_RBUTTON) & 0x8000)) return;
 
         uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
@@ -31,10 +28,8 @@ namespace Features {
         if (!localPlayerPawn) return;
 
         int localTeam = *reinterpret_cast<int*>(localPlayerPawn + Offsets::m_iTeamNum);
-        
-        // Yerel oyuncunun göz pozisyonu
         Vector3 localEyePos = *reinterpret_cast<Vector3*>(localPlayerPawn + Offsets::m_vOldOrigin);
-        Vector3 viewOffset = *reinterpret_cast<Vector3*>(localPlayerPawn + 0x318); // m_vecViewOffset
+        Vector3 viewOffset = *reinterpret_cast<Vector3*>(localPlayerPawn + 0x318);
         localEyePos = localEyePos + viewOffset;
 
         uintptr_t entityList = *reinterpret_cast<uintptr_t*>(client + Offsets::dwEntityList);
@@ -64,10 +59,10 @@ namespace Features {
             if (!pPawn || pPawn == localPlayerPawn) continue;
 
             int team = *reinterpret_cast<int*>(pPawn + Offsets::m_iTeamNum);
-            if (team == localTeam) continue; // Kendi takımındakileri hedef alma
+            if (team == localTeam) continue;
 
             Vector3 targetPos = *reinterpret_cast<Vector3*>(pPawn + Offsets::m_vOldOrigin);
-            targetPos.z += 60.0f; // Kafaya nişan almak için Z eksenini yukarı kaldırıyoruz
+            targetPos.z += 60.0f;
 
             Vector3 calculatedAngle;
             CalcAngle(localEyePos, targetPos, calculatedAngle);
@@ -75,7 +70,6 @@ namespace Features {
             Vector3* viewAngles = reinterpret_cast<Vector3*>(client + Offsets::dwViewAngles);
             if (!viewAngles) continue;
 
-            // FOV (Görüş alanı) mesafesini hesapla
             float fovDelta = sqrt(pow(calculatedAngle.x - viewAngles->x, 2) + pow(calculatedAngle.y - viewAngles->y, 2));
             if (fovDelta < bestFov) {
                 bestFov = fovDelta;
@@ -84,7 +78,6 @@ namespace Features {
             }
         }
 
-        // En yakın hedefe yumuşak bir şekilde (Smooth) kilitlen
         if (targetFound) {
             Vector3* viewAngles = reinterpret_cast<Vector3*>(client + Offsets::dwViewAngles);
             if (viewAngles) {
