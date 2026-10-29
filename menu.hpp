@@ -7,7 +7,8 @@ namespace Menu {
     inline bool MenuOpen = true;
 
     inline void Render() {
-        if (GetAsyncKeyState(VK_RSHIFT) & 1) MenuOpen = !MenuOpen;
+        // Sağ Shift yerine Insert tuşu (VK_INSERT) kullanıyoruz
+        if (GetAsyncKeyState(VK_INSERT) & 1) MenuOpen = !MenuOpen;
         if (!MenuOpen) return;
 
         ImGui::Begin("Vsense v1.0 | CS2 Internal", &MenuOpen, ImGuiWindowFlags_AlwaysAutoResize);
