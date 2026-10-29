@@ -22,23 +22,21 @@ jobs:
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Build and Run CS2-Dumper
+    - name: Setup Rust Toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Run CS2-Dumper via Cargo
       run: |
         cd external_dumper
-        cmake -B build
-        cmake --build build --config Release
-        cd build\bin\Release
-        # Dumper'ı çalıştırıp güncel offsetleri üretiyoruz
-        .\cs2-dumper.exe --output output
-        cd ../../../../
+        cargo run --release
 
     - name: Copy Generated Offsets to SDK
       run: |
-        # Üretilen offsets.hpp dosyasını projedeki sdk/ klasörünün üzerine yazıyoruz
-        if (Test-Path "external_dumper/build/bin/Release/output/offsets.hpp") {
-            Copy-Item "external_dumper/build/bin/Release/output/offsets.hpp" -Destination "sdk/offsets.hpp" -Force
-        } elseif (Test-Path "external_dumper/output/offsets.hpp") {
-            Copy-Item "external_dumper/output/output/offsets.hpp" -Destination "sdk/offsets.hpp" -Force
+        # a2x/cs2-dumper çıktıyı varsayılan olarak output klasörüne verir
+        if (Test-Path "external_dumper/output/offsets.hpp") {
+            Copy-Item "external_dumper/output/offsets.hpp" -Destination "sdk/offsets.hpp" -Force
+        } elseif (Test-Path "external_dumper/outputs/offsets.hpp") {
+            Copy-Item "external_dumper/outputs/offsets.hpp" -Destination "sdk/offsets.hpp" -Force
         }
 
     - name: Compile DLL
