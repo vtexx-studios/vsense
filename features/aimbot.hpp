@@ -48,7 +48,7 @@ namespace Features {
             if (!playerController) continue;
 
             uint32_t pawnHandle = *reinterpret_cast<uint32_t*>(playerController + Offsets::m_hPlayerPawn);
-            if (!pawnHandle) continue;
+            if (!pawnHandle || pawnHandle == 0xFFFFFFFF) continue;
 
             uintptr_t listEntry2 = *reinterpret_cast<uintptr_t*>(entityList + 0x8 * ((pawnHandle & 0x7FFF) >> 9) + 16);
             if (!listEntry2) continue;
@@ -68,7 +68,6 @@ namespace Features {
             Vector3 calculatedAngle;
             CalcAngle(localEyePos, targetPos, calculatedAngle);
 
-            // Güvenli ViewAngles Pointer okuma
             uintptr_t viewAnglesPtr = client + Offsets::dwViewAngles;
             Vector3* viewAngles = reinterpret_cast<Vector3*>(viewAnglesPtr);
             if (!viewAngles) continue;
@@ -88,6 +87,10 @@ namespace Features {
                 if (Smooth < 1.0f) Smooth = 1.0f;
                 viewAngles->x += (bestAngle.x - viewAngles->x) / Smooth;
                 viewAngles->y += (bestAngle.y - viewAngles->y) / Smooth;
+
+                // Kamera takla atmasını önleyen açı sınırlandırması
+                if (viewAngles->x > 89.0f) viewAngles->x = 89.0f;
+                if (viewAngles->x < -89.0f) viewAngles->x = -89.0f;
             }
         }
     }
