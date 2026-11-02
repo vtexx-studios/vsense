@@ -89,25 +89,21 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 }
 
 DWORD WINAPI MainThread(LPVOID lpParam) {
-    // client.dll tam olarak yüklenene kadar bekle
+    // client.dll yüklenene kadar bekle
     while (GetModuleHandleA("client.dll") == NULL) {
         Sleep(200);
     }
 
-    // MinHook başlatma kontrolü
     if (MH_Initialize() != MH_OK) {
         return 1;
     }
 
-    // Güvenli dummy pencere oluşturma
-    WNDCLASSEXA wc = { sizeof(WNDCLASSEXA), CS_CLASSDC, DefWindowProcA, 0L, 0L, GetModuleHandleA(NULL), NULL, NULL, NULL, NULL, "VsenseCore", NULL };
-    if (!RegisterClassExA(&wc)) return 1;
-    
-    HWND hwnd = CreateWindowA(wc.lpszClassName, "VsenseWnd", WS_OVERLAPPEDWINDOW, 100, 100, 100, 100, NULL, NULL, wc.hInstance, NULL);
+    // Sahte pencere yerine CS2'nin kendi penceresi (Valve001) yakalanıyor
+    HWND hwnd = FindWindowA("Valve001", NULL);
     if (!hwnd) {
-        UnregisterClassA(wc.lpszClassName, wc.hInstance);
-        return 1;
+        hwnd = GetForegroundWindow();
     }
+    if (!hwnd) return 1;
 
     D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_11_0 };
     ID3D11Device* pDummyDevice = nullptr;
@@ -134,8 +130,6 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
             pDummySwapChain->Release();
             pDummyDevice->Release();
             pDummyContext->Release();
-            DestroyWindow(hwnd);
-            UnregisterClassA(wc.lpszClassName, wc.hInstance);
 
             if (pPresent) {
                 if (MH_CreateHook(pPresent, reinterpret_cast<LPVOID>(&hkPresent), reinterpret_cast<LPVOID*>(&oPresent)) == MH_OK) {
