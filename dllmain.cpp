@@ -66,9 +66,9 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
     // Hile Özellikleri
     Features::RenderESP();
     Features::RunAimbot();
-    // Features::RunBhop();
-    // Features::RunMevlana();
-    // Features::RunThirdperson();
+    Features::RunBhop();
+    Features::RunMevlana();
+    Features::RunThirdperson();
 
     // Menü
     Menu::Render();
