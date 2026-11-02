@@ -7,7 +7,6 @@ namespace cs2_dumper::offsets::client_dll {
     inline constexpr std::ptrdiff_t dwLocalPlayerPawn = 0x25698C8;
     inline constexpr std::ptrdiff_t dwViewMatrix = 0x256F1D0;
     inline constexpr std::ptrdiff_t dwViewAngles = 0x2580008;
-    inline constexpr std::ptrdiff_t dwForceJump = 0x1842360; // Bhop aktif edildiğinde kullanılır
 }
 
 namespace Offsets {
@@ -15,7 +14,6 @@ namespace Offsets {
     inline constexpr std::ptrdiff_t& dwLocalPlayerPawn = cs2_dumper::offsets::client_dll::dwLocalPlayerPawn;
     inline constexpr std::ptrdiff_t& dwViewMatrix = cs2_dumper::offsets::client_dll::dwViewMatrix;
     inline constexpr std::ptrdiff_t& dwViewAngles = cs2_dumper::offsets::client_dll::dwViewAngles;
-    inline constexpr std::ptrdiff_t& dwForceJump = cs2_dumper::offsets::client_dll::dwForceJump;
 
     // Schema / Netvar Sabitleri
     inline constexpr std::ptrdiff_t m_iHealth = 0x334;
