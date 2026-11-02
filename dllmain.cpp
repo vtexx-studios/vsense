@@ -37,10 +37,11 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
             window = sd.OutputWindow;
             
             ID3D11Texture2D* pBackBuffer = nullptr;
-            pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-            if (pBackBuffer) {
-                pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
-                pBackBuffer->Release();
+            if (SUCCEEDED(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer))) {
+                if (pBackBuffer) {
+                    pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
+                    pBackBuffer->Release();
+                }
             }
             
             if (window) {
@@ -83,7 +84,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 }
 
 DWORD WINAPI MainThread(LPVOID lpParam) {
-    // client.dll yüklenene kadar kısa bir süre bekle
+    // client.dll yüklenene kadar güvenli bekleme
     while (GetModuleHandleA("client.dll") == NULL) {
         Sleep(200);
     }
@@ -92,7 +93,7 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
         return 1;
     }
 
-    // Doğrudan sistem DXGI / swapchain vtable adresini yakalamak için güvenli dummy pencere
+    // DXGI SwapChain vtable adresini yakalamak için dummy pencere
     WNDCLASSEXA wc = { sizeof(WNDCLASSEXA), CS_CLASSDC, DefWindowProcA, 0L, 0L, GetModuleHandleA(NULL), NULL, NULL, NULL, NULL, "VsenseCore", NULL };
     if (!RegisterClassExA(&wc)) return 1;
     
@@ -121,7 +122,7 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
         D3D11_SDK_VERSION, &sd, &pDummySwapChain, &pDummyDevice, NULL, &pDummyContext) == S_OK && pDummySwapChain)
     {
         void** pVTable = *reinterpret_cast<void***>(pDummySwapChain);
-        if (pVTable) {
+        if (pVTable && pVTable[8]) {
             void* pPresent = pVTable[8];
 
             pDummySwapChain->Release();
@@ -130,20 +131,21 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
             DestroyWindow(hwnd);
             UnregisterClassA(wc.lpszClassName, wc.hInstance);
 
-            if (pPresent && MH_CreateHook(pPresent, reinterpret_cast<LPVOID>(&hkPresent), reinterpret_cast<LPVOID*>(&oPresent)) == MH_OK) {
-                MH_EnableHook(pPresent);
+            if (pPresent) {
+                if (MH_CreateHook(pPresent, reinterpret_cast<LPVOID>(&hkPresent), reinterpret_cast<LPVOID*>(&oPresent)) == MH_OK) {
+                    MH_EnableHook(pPresent);
+                }
             }
         }
     }
 
     return 0;
-} // <--- EKSİK OLAN KAPANIŞ SÜSLÜ PARANTEZİ EKLENDİ
+}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls(hModule);
-        // Thread güvenli şekilde başlatılıyor
         CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)MainThread, hModule, 0, nullptr);
         break;
     case DLL_PROCESS_DETACH:
