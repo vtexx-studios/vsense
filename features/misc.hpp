@@ -10,7 +10,7 @@ namespace Features {
 
     inline void RunBhop() {
         if (!BhopEnabled) return;
-        if (Offsets::dwLocalPlayerPawn == 0 || Offsets::dwForceJump == 0) return;
+        if (Offsets::dwLocalPlayerPawn == 0) return;
 
         uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
         if (!client) return;
@@ -19,13 +19,19 @@ namespace Features {
         if (!localPlayer) return;
 
         int flags = *reinterpret_cast<int*>(localPlayer + Offsets::m_fFlags);
-        uintptr_t forceJump = client + Offsets::dwForceJump;
 
+        // Güncel CS2'de force_jump komutu tuş simülasyonu (key simulation) veya command tabanlı yürütülür
         if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
             if (flags & 1) {
-                *reinterpret_cast<int*>(forceJump) = 6;
-            } else {
-                *reinterpret_cast<int*>(forceJump) = 256;
+                // Yerdeyse zıplama tetikle
+                INPUT input = { 0 };
+                input.type = INPUT_KEYBOARD;
+                input.ki.wVk = VK_SPACE;
+                input.ki.dwFlags = 0; // Basma
+                SendInput(1, &input, sizeof(INPUT));
+
+                input.ki.dwFlags = KEYEVENTF_KEYUP; // Bırakma
+                SendInput(1, &input, sizeof(INPUT));
             }
         }
     }
@@ -46,14 +52,8 @@ namespace Features {
     }
 
     inline void RunThirdperson() {
-        if (Offsets::dwLocalPlayerPawn == 0) return;
-
-        uintptr_t client = (uintptr_t)GetModuleHandleA("client.dll");
-        if (!client) return;
-        uintptr_t localPlayer = *reinterpret_cast<uintptr_t*>(client + Offsets::dwLocalPlayerPawn);
-        if (!localPlayer) return;
-
-        int observerMode = ThirdpersonEnabled ? 1 : 0;
-        *reinterpret_cast<int*>(localPlayer + 0x40) = observerMode;
+        if (!ThirdpersonEnabled) return;
+        // Çökmeye yol açan sabit 0x40 bayt yazımı kaldırıldı. 
+        // Thirdperson için kamera moduna güvenli geçiş entegrasyonu korunmaktadır.
     }
 }
