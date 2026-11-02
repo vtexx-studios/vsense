@@ -1,12 +1,13 @@
 #pragma once
 #include <cstddef>
+#include <cstdint>
 
 namespace cs2_dumper::offsets::client_dll {
-    inline constexpr std::ptrdiff_t dwEntityList = 0x1A444C0;
-    inline constexpr std::ptrdiff_t dwLocalPlayerPawn = 0x1824A08;
-    inline constexpr std::ptrdiff_t dwViewMatrix = 0x1A4D020;
-    inline constexpr std::ptrdiff_t dwViewAngles = 0x1A5B4C0;
-    inline constexpr std::ptrdiff_t dwForceJump = 0x1842360;
+    inline constexpr std::ptrdiff_t dwEntityList = 0x271EB08;
+    inline constexpr std::ptrdiff_t dwLocalPlayerPawn = 0x25698C8;
+    inline constexpr std::ptrdiff_t dwViewMatrix = 0x256F1D0;
+    inline constexpr std::ptrdiff_t dwViewAngles = 0x2580008;
+    inline constexpr std::ptrdiff_t dwForceJump = 0x1842360; // Bhop aktif edildiğinde kullanılır
 }
 
 namespace Offsets {
@@ -16,7 +17,7 @@ namespace Offsets {
     inline constexpr std::ptrdiff_t& dwViewAngles = cs2_dumper::offsets::client_dll::dwViewAngles;
     inline constexpr std::ptrdiff_t& dwForceJump = cs2_dumper::offsets::client_dll::dwForceJump;
 
-    // Netvar / Schema Değerleri
+    // Schema / Netvar Sabitleri
     inline constexpr std::ptrdiff_t m_iHealth = 0x334;
     inline constexpr std::ptrdiff_t m_hPlayerPawn = 0x804;
     inline constexpr std::ptrdiff_t m_vOldOrigin = 0x1274;
