@@ -21,7 +21,7 @@ inline bool WorldToScreen(Vector3& pos, Vector2& screen, float* matrix, int widt
     float x = matrix[0] * pos.x + matrix[1] * pos.y + matrix[2] * pos.z + matrix[3];
     float y = matrix[4] * pos.x + matrix[5] * pos.y + matrix[6] * pos.z + matrix[7];
 
-    screen.x = (width / 2.0f) + (0.5f * x * invw * width + 0.5f);
-    screen.y = (height / 2.0f) - (0.5f * y * invw * height + 0.5f);
+    screen.x = (width / 2.0f) + (x * invw) * (width / 2.0f);
+    screen.y = (height / 2.0f) - (y * invw) * (height / 2.0f);
     return true;
 }
