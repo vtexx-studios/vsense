@@ -30,31 +30,36 @@ LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
     static bool init = false;
     if (!init) {
-        if (SUCCEEDED(pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice))) {
-            pDevice->GetImmediateContext(&pContext);
-            DXGI_SWAP_CHAIN_DESC sd;
-            pSwapChain->GetDesc(&sd);
-            window = sd.OutputWindow;
-            
-            ID3D11Texture2D* pBackBuffer = nullptr;
-            if (SUCCEEDED(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer))) {
-                if (pBackBuffer) {
-                    pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
-                    pBackBuffer->Release();
+        if (pSwapChain && SUCCEEDED(pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice))) {
+            if (pDevice) {
+                pDevice->GetImmediateContext(&pContext);
+                DXGI_SWAP_CHAIN_DESC sd;
+                if (SUCCEEDED(pSwapChain->GetDesc(&sd))) {
+                    window = sd.OutputWindow;
+                }
+                
+                ID3D11Texture2D* pBackBuffer = nullptr;
+                if (SUCCEEDED(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer))) {
+                    if (pBackBuffer) {
+                        pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
+                        pBackBuffer->Release();
+                    }
+                }
+                
+                if (window) {
+                    oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc);
+                }
+
+                ImGui::CreateContext();
+                ImGuiIO& io = ImGui::GetIO();
+                io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+                
+                if (window) ImGui_ImplWin32_Init(window);
+                if (pDevice && pContext) {
+                    ImGui_ImplDX11_Init(pDevice, pContext);
+                    init = true;
                 }
             }
-            
-            if (window) {
-                oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc);
-            }
-
-            ImGui::CreateContext();
-            ImGuiIO& io = ImGui::GetIO();
-            io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-            
-            if (window) ImGui_ImplWin32_Init(window);
-            ImGui_ImplDX11_Init(pDevice, pContext);
-            init = true;
         }
     }
 
@@ -75,7 +80,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
     Menu::Render();
 
     ImGui::Render();
-    if (mainRenderTargetView) {
+    if (mainRenderTargetView && pContext) {
         pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
     }
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -84,16 +89,17 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 }
 
 DWORD WINAPI MainThread(LPVOID lpParam) {
-    // client.dll yüklenene kadar güvenli bekleme
+    // client.dll tam olarak yüklenene kadar bekle
     while (GetModuleHandleA("client.dll") == NULL) {
         Sleep(200);
     }
 
+    // MinHook başlatma kontrolü
     if (MH_Initialize() != MH_OK) {
         return 1;
     }
 
-    // DXGI SwapChain vtable adresini yakalamak için dummy pencere
+    // Güvenli dummy pencere oluşturma
     WNDCLASSEXA wc = { sizeof(WNDCLASSEXA), CS_CLASSDC, DefWindowProcA, 0L, 0L, GetModuleHandleA(NULL), NULL, NULL, NULL, NULL, "VsenseCore", NULL };
     if (!RegisterClassExA(&wc)) return 1;
     
