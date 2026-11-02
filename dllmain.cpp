@@ -30,14 +30,14 @@ LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
     static bool init = false;
     if (!init) {
-        if (SUCCEEDED(pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice))) {
+        if (SUCCEEDED(pSwapChain->GetDevice(__uuidof(IDevice), (void**)&pDevice))) {
             pDevice->GetImmediateContext(&pContext);
             DXGI_SWAP_CHAIN_DESC sd;
             pSwapChain->GetDesc(&sd);
             window = sd.OutputWindow;
             
-            ID3D11Texture2D* pBackBuffer = nullptr;
-            pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+            ITexture2D* pBackBuffer = nullptr;
+            pSwapChain->GetBuffer(0, __uuidof(ITexture2D), (LPVOID*)&pBackBuffer);
             if (pBackBuffer) {
                 pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
                 pBackBuffer->Release();
@@ -92,7 +92,7 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
         return 1;
     }
 
-    // Doğrudan sistem DXGI / D3D11 swapchain vtable adresini yakalamak için güvenli dummy pencere
+    // Doğrudan sistem DXGI /  swapchain vtable adresini yakalamak için güvenli dummy pencere
     WNDCLASSEXA wc = { sizeof(WNDCLASSEXA), CS_CLASSDC, DefWindowProcA, 0L, 0L, GetModuleHandleA(NULL), NULL, NULL, NULL, NULL, "VsenseCore", NULL };
     if (!RegisterClassExA(&wc)) return 1;
     
@@ -116,11 +116,12 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
     sd.Windowed = TRUE;
     sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-    if (D3D11CreateDeviceAndSwapChain(
-        NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, levels, 1,
-        D3D11_SDK_VERSION, &sd, &pDummySwapChain, &pDummyDevice, NULL, &pDummyContext) == S_OK)
-    {
-        void** pVTable = *reinterpret_cast<void***>(pDummySwapChain);
+ if (D3D11CreateDeviceAndSwapChain(
+    NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, levels, 1,
+    D3D11_SDK_VERSION, &sd, &pDummySwapChain, &pDummyDevice, NULL, &pDummyContext) == S_OK && pDummySwapChain)
+{
+    void** pVTable = *reinterpret_cast<void***>(pDummySwapChain);
+    if (pVTable) {
         void* pPresent = pVTable[8];
 
         pDummySwapChain->Release();
@@ -129,12 +130,10 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
         DestroyWindow(hwnd);
         UnregisterClassA(wc.lpszClassName, wc.hInstance);
 
-        if (MH_CreateHook(pPresent, reinterpret_cast<LPVOID>(&hkPresent), reinterpret_cast<LPVOID*>(&oPresent)) == MH_OK) {
+        if (pPresent && MH_CreateHook(pPresent, reinterpret_cast<LPVOID>(&hkPresent), reinterpret_cast<LPVOID*>(&oPresent)) == MH_OK) {
             MH_EnableHook(pPresent);
         }
     }
-
-    return 0;
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
